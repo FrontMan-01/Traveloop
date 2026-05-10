@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String?
+  city      String?
+  country   String?
+  password  String
+  photo     String?
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  trips          Trip[]
+  checklistItems ChecklistItem[]
+}
+
+model Trip {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  coverPhoto  String?
+  startDate   DateTime
+  endDate     DateTime
+  isPublic    Boolean  @default(false)
+  status      String   @default("upcoming")
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  stops       Stop[]
+  notes       Note[]
+  budgets     Budget[]
+}
+
+model Stop {
+  id         String   @id @default(uuid())
+  cityName   String
+  country    String?
+  startDate  DateTime
+  endDate    DateTime
+  orderIndex Int      @default(0)
+  tripId     String
+  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  activities Activity[]
+  notes      Note[]
+}
+
+model Activity {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  type        String?
+  cost        Float   @default(0)
+  duration    String?
+  timeSlot    String?
+  stopId      String
+  stop        Stop    @relation(fields: [stopId], references: [id], onDelete: Cascade)
+}
+
+model Budget {
+  id          String  @id @default(uuid())
+  category    String
+  amount      Float
+  description String?
+  tripId      String
+  trip        Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  tripId    String?
+  trip      Trip?    @relation(fields: [tripId], references: [id])
+  stopId    String?
+  stop      Stop?    @relation(fields: [stopId], references: [id])
+}
+
+model ChecklistItem {
+  id       String  @id @default(uuid())
+  name     String
+  category String
+  isPacked Boolean @default(false)
+  tripId   String
+  userId   String
+  user     User    @relation(fields: [userId], references: [id])
+}
