@@ -324,169 +324,66 @@ traveloop/
 ### Prerequisites
 
 - Node.js v18+
-- PostgreSQL installed locally (or use Railway cloud DB)
 - Git
 
 ---
 
-### Backend Setup
+### 1. Clone the Repository
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-team/traveloop.git
-cd traveloop/server
+git clone https://github.com/your-username/traveloop.git
+cd traveloop
+```
 
-# 2. Install dependencies
+### 2. Backend Setup
+
+The backend uses a local SQLite database by default, meaning **no database installation is required**!
+
+```bash
+cd backend
+
+# Install dependencies
 npm install
 
-# 3. Configure environment variables
+# Configure environment variables
 cp .env.example .env
-# Edit .env with your database URL and JWT secret
 
-# 4. Push schema to database
-npx prisma db push
+# Generate Prisma Client & push schema to local SQLite db
 npx prisma generate
+npx prisma db push
 
-# 5. (Optional) Seed the database
-npx prisma db seed
-
-# 6. Start the development server
-npm run dev
-# Server runs on http://localhost:5000
+# Start the server
+node app.js
+# The API will run on http://localhost:5000
 ```
 
-**`server/src/app.js`**
-```js
-const express = require('express');
-const cors    = require('cors');
-require('dotenv').config();
+### 3. Frontend Setup
 
-const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL }));
-app.use(express.json());
-
-app.use('/api/auth',       require('./routes/auth.routes'));
-app.use('/api/trips',      require('./routes/trips.routes'));
-app.use('/api/stops',      require('./routes/stops.routes'));
-app.use('/api/activities', require('./routes/activities.routes'));
-app.use('/api/budget',     require('./routes/budget.routes'));
-app.use('/api/checklist',  require('./routes/checklist.routes'));
-app.use('/api/notes',      require('./routes/notes.routes'));
-app.use('/api/admin',      require('./routes/admin.routes'));
-
-app.listen(process.env.PORT || 5000, () =>
-  console.log(`🚀 Server running on port ${process.env.PORT}`)
-);
-```
-
-**`server/src/middleware/auth.middleware.js`**
-```js
-const jwt = require('jsonwebtoken');
-
-module.exports = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ success: false, message: 'No token' });
-  try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
-```
-
----
-
-### Frontend Setup
+Open a new terminal window to keep the backend running:
 
 ```bash
-cd ../client
+cd frontend
 
-# 1. Install dependencies
+# Install dependencies
 npm install
 
-# 2. Configure environment
-cp .env.example .env
-# Set VITE_API_URL to your backend URL
-
-# 3. Start development server
+# Start the development server
 npm run dev
-# App runs on http://localhost:5173
-```
-
-**`client/src/api/index.js`**
-```js
-import axios from 'axios';
-
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL });
-
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('traveloop_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-export default api;
-```
-
-**`client/src/context/AuthContext.jsx`**
-```jsx
-import { createContext, useContext, useState } from 'react';
-const AuthContext = createContext();
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem('traveloop_user')) || null
-  );
-
-  const login = (userData, token) => {
-    localStorage.setItem('traveloop_user', JSON.stringify(userData));
-    localStorage.setItem('traveloop_token', token);
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.clear();
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export const useAuth = () => useContext(AuthContext);
-```
-
-**`client/src/components/ProtectedRoute.jsx`**
-```jsx
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-
-export default function ProtectedRoute({ children }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/" replace />;
-}
+# The app will run on http://localhost:5173
 ```
 
 ---
 
 ## 🔐 Environment Variables
 
-### `server/.env`
+### `backend/.env`
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/traveloop"
+DATABASE_URL="file:./dev.db"
 JWT_SECRET="your_super_secret_key_change_this"
 PORT=5000
-CLIENT_URL="http://localhost:5173"
 ```
 
-### `client/.env`
-```env
-VITE_API_URL="http://localhost:5000/api"
-```
+*Note: The frontend is pre-configured to connect to the backend running on `localhost:5000`. No `.env` is required for the frontend.*
 
 ---
 
